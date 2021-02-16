@@ -70,14 +70,25 @@ This function deletes the first block (from proxy)."
 (defun mb-url-http-sentinel (proc evt)
   (when (string= evt "finished\n")
     (with-current-buffer (process-buffer proc)
+      (let ((end-of-headers
+             (save-excursion
+               (goto-char (point-min))
+               (re-search-forward "\r\n\r\n" nil t)))
+            (buf (current-buffer)))
+        (with-temp-buffer
+          (insert-buffer-substring buf nil end-of-headers)
+          (goto-char (point-min))
+          (while (re-search-forward "\r\n" nil t)
+            (replace-match "\n"))
+          (let ((hdr-buf (current-buffer)))
+            (with-temp-buffer
+              (insert-buffer-substring hdr-buf)
+              (insert-buffer-substring buf end-of-headers nil)
+              (buffer-swap-text buf)))))
       (let ((url-http-end-of-headers
              (save-excursion
                (goto-char (point-min))
-               (re-search-forward "\r\n\r\n" nil t))))
-        (save-excursion
-          (goto-char (point-min))
-          (while (re-search-forward "\r\n" url-http-end-of-headers t)
-            (replace-match "\n")))
+               (re-search-forward "\n\n" nil t))))
         (url-http-end-of-document-sentinel proc evt)))))
 
 (defun mb-url-http-header-field-to-argument (header)
