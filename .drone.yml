@@ -28,56 +28,65 @@
       {
          "commands": [
             "apt-get update",
-            "apt-get install --yes git",
-            "git clone https://github.com/Homebrew/brew /home/linuxbrew/.linuxbrew/Homebrew",
-            "mkdir -p /home/linuxbrew/.linuxbrew/bin",
-            "ln -s ../Homebrew/bin/brew /home/linuxbrew/.linuxbrew/bin"
+            "apt-get install --yes curl sudo",
+            "groupadd nixbld",
+            "useradd --create-home --groups nixbld nixuser",
+            "chown nixuser: /nix",
+            "echo \"nixuser ALL=(ALL:ALL) NOPASSWD: ALL\" > /etc/sudoers.d/nixuser",
+            "unset NIX_REMOTE",
+            "curl -L https://nixos.org/nix/install | sh -s -- --no-daemon",
+            ". $HOME/.nix-profile/etc/profile.d/nix.sh",
+            "cat $HOME/.nix-profile/etc/profile.d/nix.sh",
+            "echo $HOME",
+            "echo $PATH",
+            "nix-channel --update",
+            "nix-env -i nix curl"
+         ],
+         "depends_on": [
+            "install locales"
          ],
          "image": "buildpack-deps:stable",
-         "name": "install Linuxbrew",
+         "name": "install nix",
          "volumes": [
             {
-               "name": "linuxbrew",
-               "path": "/home/linuxbrew/.linuxbrew"
+               "name": "nix",
+               "path": "/nix"
             }
          ]
       },
       {
          "commands": [
-            "eval \"$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)\"",
-            "brew update",
-            "brew bundle"
+            "ls /nix/var/nix/profiles/",
+            "ls /nix/var/nix/profiles/per-user/",
+            "{ find /nix/var/nix/profiles/ | grep profile.d ; } || true",
+            "find /nix/var/nix/profiles/",
+            "echo \"/nix/var/nix/profiles/per-user/nixuser/profile\"",
+            "echo \"$HOME/.nix-profile\"",
+            "ln -sf \"/nix/var/nix/profiles/per-user/nixuser/profile\" \"$HOME/.nix-profile\"",
+            ". \"$HOME/.nix-profile/etc/profile.d/nix.sh\"",
+            "unset NIX_REMOTE",
+            "nix-shell --run true shell.nix"
          ],
          "depends_on": [
-            "install locales",
-            "install Linuxbrew"
+            "install nix"
          ],
-         "environment": {
-            "HOMEBREW_DEVELOPER": 1,
-            "HOMEBREW_NO_ANALYTICS": 1,
-            "HOMEBREW_NO_AUTO_UPDATE": 1,
-            "HOMEBREW_NO_INSTALL_CLEANUP": 1
-         },
          "image": "buildpack-deps:stable",
          "name": "install ci deps",
          "volumes": [
             {
-               "name": "locales",
-               "path": "/usr/lib/locale"
-            },
-            {
-               "name": "linuxbrew",
-               "path": "/home/linuxbrew/.linuxbrew"
-            },
-            {
-               "name": "cache",
-               "path": "/root/.cache"
+               "name": "nix",
+               "path": "/nix"
             }
          ]
       },
       {
          "commands": [
-            "eval \"$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)\"",
+            "echo \"/nix/var/nix/profiles/per-user/nixuser/profile\"",
+            "echo \"$HOME/.nix-profile\"",
+            "ln -sf \"/nix/var/nix/profiles/per-user/nixuser/profile\" \"$HOME/.nix-profile\"",
+            ". \"$HOME/.nix-profile/etc/profile.d/nix.sh\"",
+            "unset NIX_REMOTE",
+            "nix-shell shell.nix",
             "cask install",
             "sleep 15",
             "cask exec ert-runner"
@@ -96,14 +105,19 @@
                "path": "/usr/lib/locale"
             },
             {
-               "name": "linuxbrew",
-               "path": "/home/linuxbrew/.linuxbrew"
+               "name": "nix",
+               "path": "/nix"
             }
          ]
       },
       {
          "commands": [
-            "eval \"$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)\"",
+            "echo \"/nix/var/nix/profiles/per-user/nixuser/profile\"",
+            "echo \"$HOME/.nix-profile\"",
+            "ln -sf \"/nix/var/nix/profiles/per-user/nixuser/profile\" \"$HOME/.nix-profile\"",
+            ". \"$HOME/.nix-profile/etc/profile.d/nix.sh\"",
+            "unset NIX_REMOTE",
+            "nix-shell shell.nix",
             "cask install",
             "sleep 15",
             "cask exec ert-runner"
@@ -122,14 +136,19 @@
                "path": "/usr/lib/locale"
             },
             {
-               "name": "linuxbrew",
-               "path": "/home/linuxbrew/.linuxbrew"
+               "name": "nix",
+               "path": "/nix"
             }
          ]
       },
       {
          "commands": [
-            "eval \"$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)\"",
+            "echo \"/nix/var/nix/profiles/per-user/nixuser/profile\"",
+            "echo \"$HOME/.nix-profile\"",
+            "ln -sf \"/nix/var/nix/profiles/per-user/nixuser/profile\" \"$HOME/.nix-profile\"",
+            ". \"$HOME/.nix-profile/etc/profile.d/nix.sh\"",
+            "unset NIX_REMOTE",
+            "nix-shell shell.nix",
             "cask install",
             "sleep 15",
             "cask exec ert-runner"
@@ -148,14 +167,19 @@
                "path": "/usr/lib/locale"
             },
             {
-               "name": "linuxbrew",
-               "path": "/home/linuxbrew/.linuxbrew"
+               "name": "nix",
+               "path": "/nix"
             }
          ]
       },
       {
          "commands": [
-            "eval \"$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)\"",
+            "echo \"/nix/var/nix/profiles/per-user/nixuser/profile\"",
+            "echo \"$HOME/.nix-profile\"",
+            "ln -sf \"/nix/var/nix/profiles/per-user/nixuser/profile\" \"$HOME/.nix-profile\"",
+            ". \"$HOME/.nix-profile/etc/profile.d/nix.sh\"",
+            "unset NIX_REMOTE",
+            "nix-shell shell.nix",
             "cask install",
             "sleep 15",
             "cask exec ert-runner"
@@ -174,14 +198,19 @@
                "path": "/usr/lib/locale"
             },
             {
-               "name": "linuxbrew",
-               "path": "/home/linuxbrew/.linuxbrew"
+               "name": "nix",
+               "path": "/nix"
             }
          ]
       },
       {
          "commands": [
-            "eval \"$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)\"",
+            "echo \"/nix/var/nix/profiles/per-user/nixuser/profile\"",
+            "echo \"$HOME/.nix-profile\"",
+            "ln -sf \"/nix/var/nix/profiles/per-user/nixuser/profile\" \"$HOME/.nix-profile\"",
+            ". \"$HOME/.nix-profile/etc/profile.d/nix.sh\"",
+            "unset NIX_REMOTE",
+            "nix-shell shell.nix",
             "cask install",
             "sleep 15",
             "cask exec ert-runner"
@@ -200,14 +229,19 @@
                "path": "/usr/lib/locale"
             },
             {
-               "name": "linuxbrew",
-               "path": "/home/linuxbrew/.linuxbrew"
+               "name": "nix",
+               "path": "/nix"
             }
          ]
       },
       {
          "commands": [
-            "eval \"$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)\"",
+            "echo \"/nix/var/nix/profiles/per-user/nixuser/profile\"",
+            "echo \"$HOME/.nix-profile\"",
+            "ln -sf \"/nix/var/nix/profiles/per-user/nixuser/profile\" \"$HOME/.nix-profile\"",
+            ". \"$HOME/.nix-profile/etc/profile.d/nix.sh\"",
+            "unset NIX_REMOTE",
+            "nix-shell shell.nix",
             "cask install",
             "sleep 15",
             "cask exec ert-runner"
@@ -226,14 +260,19 @@
                "path": "/usr/lib/locale"
             },
             {
-               "name": "linuxbrew",
-               "path": "/home/linuxbrew/.linuxbrew"
+               "name": "nix",
+               "path": "/nix"
             }
          ]
       },
       {
          "commands": [
-            "eval \"$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)\"",
+            "echo \"/nix/var/nix/profiles/per-user/nixuser/profile\"",
+            "echo \"$HOME/.nix-profile\"",
+            "ln -sf \"/nix/var/nix/profiles/per-user/nixuser/profile\" \"$HOME/.nix-profile\"",
+            ". \"$HOME/.nix-profile/etc/profile.d/nix.sh\"",
+            "unset NIX_REMOTE",
+            "nix-shell shell.nix",
             "cask install",
             "sleep 15",
             "cask exec ert-runner"
@@ -252,23 +291,19 @@
                "path": "/usr/lib/locale"
             },
             {
-               "name": "linuxbrew",
-               "path": "/home/linuxbrew/.linuxbrew"
+               "name": "nix",
+               "path": "/nix"
             }
          ]
       }
    ],
    "volumes": [
       {
-         "name": "cache",
-         "temp": { }
-      },
-      {
          "name": "locales",
          "temp": { }
       },
       {
-         "name": "linuxbrew",
+         "name": "nix",
          "temp": { }
       }
    ]
@@ -302,58 +337,65 @@
       {
          "commands": [
             "apt-get update",
-            "apt-get install --yes git",
-            "git clone https://github.com/Homebrew/brew /home/linuxbrew/.linuxbrew/Homebrew",
-            "mkdir -p /home/linuxbrew/.linuxbrew/bin",
-            "ln -s ../Homebrew/bin/brew /home/linuxbrew/.linuxbrew/bin"
+            "apt-get install --yes curl sudo",
+            "groupadd nixbld",
+            "useradd --create-home --groups nixbld nixuser",
+            "chown nixuser: /nix",
+            "echo \"nixuser ALL=(ALL:ALL) NOPASSWD: ALL\" > /etc/sudoers.d/nixuser",
+            "unset NIX_REMOTE",
+            "curl -L https://nixos.org/nix/install | sh -s -- --no-daemon",
+            ". $HOME/.nix-profile/etc/profile.d/nix.sh",
+            "cat $HOME/.nix-profile/etc/profile.d/nix.sh",
+            "echo $HOME",
+            "echo $PATH",
+            "nix-channel --update",
+            "nix-env -i nix curl"
+         ],
+         "depends_on": [
+            "install locales"
          ],
          "image": "ubuntu:12.04",
-         "name": "install Linuxbrew",
+         "name": "install nix",
          "volumes": [
             {
-               "name": "linuxbrew",
-               "path": "/home/linuxbrew/.linuxbrew"
+               "name": "nix",
+               "path": "/nix"
             }
          ]
       },
       {
          "commands": [
-            "apt-get update",
-            "apt-get install --yes build-essential curl file git",
-            "eval \"$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)\"",
-            "brew update",
-            "brew bundle"
+            "ls /nix/var/nix/profiles/",
+            "ls /nix/var/nix/profiles/per-user/",
+            "{ find /nix/var/nix/profiles/ | grep profile.d ; } || true",
+            "find /nix/var/nix/profiles/",
+            "echo \"/nix/var/nix/profiles/per-user/nixuser/profile\"",
+            "echo \"$HOME/.nix-profile\"",
+            "ln -sf \"/nix/var/nix/profiles/per-user/nixuser/profile\" \"$HOME/.nix-profile\"",
+            ". \"$HOME/.nix-profile/etc/profile.d/nix.sh\"",
+            "unset NIX_REMOTE",
+            "nix-shell --run true shell.nix"
          ],
          "depends_on": [
-            "install locales",
-            "install Linuxbrew"
+            "install nix"
          ],
-         "environment": {
-            "HOMEBREW_DEVELOPER": 1,
-            "HOMEBREW_NO_ANALYTICS": 1,
-            "HOMEBREW_NO_AUTO_UPDATE": 1,
-            "HOMEBREW_NO_INSTALL_CLEANUP": 1
-         },
          "image": "ubuntu:12.04",
          "name": "install ci deps",
          "volumes": [
             {
-               "name": "locales",
-               "path": "/usr/lib/locale"
-            },
-            {
-               "name": "linuxbrew",
-               "path": "/home/linuxbrew/.linuxbrew"
-            },
-            {
-               "name": "cache",
-               "path": "/root/.cache"
+               "name": "nix",
+               "path": "/nix"
             }
          ]
       },
       {
          "commands": [
-            "eval \"$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)\"",
+            "echo \"/nix/var/nix/profiles/per-user/nixuser/profile\"",
+            "echo \"$HOME/.nix-profile\"",
+            "ln -sf \"/nix/var/nix/profiles/per-user/nixuser/profile\" \"$HOME/.nix-profile\"",
+            ". \"$HOME/.nix-profile/etc/profile.d/nix.sh\"",
+            "unset NIX_REMOTE",
+            "nix-shell shell.nix",
             "cask install",
             "sleep 15",
             "cask exec ert-runner"
@@ -372,23 +414,19 @@
                "path": "/usr/lib/locale"
             },
             {
-               "name": "linuxbrew",
-               "path": "/home/linuxbrew/.linuxbrew"
+               "name": "nix",
+               "path": "/nix"
             }
          ]
       }
    ],
    "volumes": [
       {
-         "name": "cache",
-         "temp": { }
-      },
-      {
          "name": "locales",
          "temp": { }
       },
       {
-         "name": "linuxbrew",
+         "name": "nix",
          "temp": { }
       }
    ]

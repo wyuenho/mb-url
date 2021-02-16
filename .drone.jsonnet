@@ -16,10 +16,15 @@ local test_step(emacs_ver) = {
   name: 'test-emacs%s' % emacs_ver,
   image: 'silex/emacs:%s-ci-cask' % emacs_ver,
   commands: [
-    'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"',
+    'echo "/nix/var/nix/profiles/per-user/nixuser/profile"',
+    'echo "$HOME/.nix-profile"',
+    'ln -sf "/nix/var/nix/profiles/per-user/nixuser/profile" "$HOME/.nix-profile"',
+    '. "$HOME/.nix-profile/etc/profile.d/nix.sh"',
+    'unset NIX_REMOTE',
+    'nix-shell shell.nix',
     'cask install',
     'sleep 15',
-    # Waiting for httpbin
+    // Waiting for httpbin
     'cask exec ert-runner',
   ],
   volumes: [
@@ -28,8 +33,8 @@ local test_step(emacs_ver) = {
       path: '/usr/lib/locale',
     },
     {
-      name: 'linuxbrew',
-      path: '/home/linuxbrew/.linuxbrew',
+      name: 'nix',
+      path: '/nix',
     },
   ],
   environment: {
@@ -51,10 +56,9 @@ local generate_pipeline(args) = {
   ],
   steps: [
     {
-      # We have to generate `en_US.UTF-8` locale because brew sets `LC_ALL` to
-      # it.
+      // Ensure locale exists.
       name: 'install locales',
-      image: args.linuxbrew_image,
+      image: args.deps_image,
       commands: args.locale_gen_cmds_func([
         'apt-get update',
         'apt-get install --yes locales',
@@ -67,67 +71,67 @@ local generate_pipeline(args) = {
       ],
     },
     {
-      name: 'install Linuxbrew',
-      image: args.linuxbrew_image,
+      name: 'install nix',
+      image: args.deps_image,
       commands: [
         'apt-get update',
-        'apt-get install --yes git',
-        'git clone https://github.com/Homebrew/brew /home/linuxbrew/.linuxbrew/Homebrew',
-        'mkdir -p /home/linuxbrew/.linuxbrew/bin',
-        'ln -s ../Homebrew/bin/brew /home/linuxbrew/.linuxbrew/bin',
+        'apt-get install --yes curl sudo',
+        'groupadd nixbld',
+        'useradd --create-home --groups nixbld nixuser',
+        'chown nixuser: /nix',
+        'echo "nixuser ALL=(ALL:ALL) NOPASSWD: ALL" > /etc/sudoers.d/nixuser',
+        'unset NIX_REMOTE',
+        'curl -L https://nixos.org/nix/install | sh -s -- --no-daemon',
+        '. $HOME/.nix-profile/etc/profile.d/nix.sh',
+        'cat $HOME/.nix-profile/etc/profile.d/nix.sh',
+        'echo $HOME',
+        'echo $PATH',
+        'nix-channel --update',
+        'nix-env -i nix curl',
       ],
       volumes: [
         {
-          name: 'linuxbrew',
-          path: '/home/linuxbrew/.linuxbrew',
+          name: 'nix',
+          path: '/nix',
         },
+      ],
+      depends_on: [
+        'install locales',
       ],
     },
     {
       name: 'install ci deps',
-      image: args.linuxbrew_image,
-      commands: args.ci_deps_cmds_func([
-        'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"',
-        'brew update',
-        'brew bundle',
-      ]),
+      image: args.deps_image,
+      commands: [
+        'ls /nix/var/nix/profiles/',
+        'ls /nix/var/nix/profiles/per-user/',
+        '{ find /nix/var/nix/profiles/ | grep profile.d ; } || true',
+        'find /nix/var/nix/profiles/',
+        'echo "/nix/var/nix/profiles/per-user/nixuser/profile"',
+        'echo "$HOME/.nix-profile"',
+        'ln -sf "/nix/var/nix/profiles/per-user/nixuser/profile" "$HOME/.nix-profile"',
+        '. "$HOME/.nix-profile/etc/profile.d/nix.sh"',
+        'unset NIX_REMOTE',
+        'nix-shell --run true shell.nix',
+      ],
       volumes: [
         {
-          name: 'locales',
-          path: '/usr/lib/locale',
-        },
-        {
-          name: 'linuxbrew',
-          path: '/home/linuxbrew/.linuxbrew',
-        },
-        {
-          name: 'cache',
-          path: '/root/.cache',
+          name: 'nix',
+          path: '/nix',
         },
       ],
-      environment: {
-        HOMEBREW_DEVELOPER: 1,
-        HOMEBREW_NO_AUTO_UPDATE: 1,
-        HOMEBREW_NO_ANALYTICS: 1,
-        HOMEBREW_NO_INSTALL_CLEANUP: 1,
-      },
       depends_on: [
-        'install locales',
-        'install Linuxbrew',
+        'install nix',
       ],
     },
   ] + std.map(test_step, args.emacs_vers),
   volumes: [
     {
-      name: 'cache',
-      temp: {},
-    },
-    {
       name: 'locales',
       temp: {},
     },
     {
-      name: 'linuxbrew',
+      name: 'nix',
       temp: {},
     },
   ],
@@ -136,19 +140,21 @@ local generate_pipeline(args) = {
 std.map(generate_pipeline, [
   {
     pipeline_name: 'default',
+    deps_image: 'buildpack-deps:stable',
     linuxbrew_image: 'buildpack-deps:stable',
     locale_gen_cmds_func: locale_gen_cmds_default,
     ci_deps_cmds_func: std.prune,
     emacs_vers: ['24.5', '25.1', '25.2', '25.3', '26.1', '26.2', '26.3'],
   },
   {
-    # According to [1] and [2], Emacs 24.4 cannot be built on Ubuntu 18.04, so
-    # `silex/emacs:24.4` use Ubuntu 12.04 as its base image.  We have to
-    # install dependencies on Ubuntu 12.04.
-    #
-    # [1]: https://github.com/Silex/docker-emacs/issues/34
-    # [2]: https://github.com/Silex/docker-emacs/commit/df66168dc4edc5a746351685b88ac59d3efcb183
+    // According to [1] and [2], Emacs 24.4 cannot be built on Ubuntu 18.04, so
+    // `silex/emacs:24.4` use Ubuntu 12.04 as its base image.  We have to
+    // install dependencies on Ubuntu 12.04.
+    //
+    // [1]: https://github.com/Silex/docker-emacs/issues/34
+    // [2]: https://github.com/Silex/docker-emacs/commit/df66168dc4edc5a746351685b88ac59d3efcb183
     pipeline_name: 'test for emacs 24.4',
+    deps_image: 'ubuntu:12.04',
     linuxbrew_image: 'ubuntu:12.04',
     locale_gen_cmds_func: locale_gen_cmds_ubuntu1204,
     ci_deps_cmds_func: linuxbrew_debian_cmds,
